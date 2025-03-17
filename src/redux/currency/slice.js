@@ -1,4 +1,4 @@
-import { exchangeCurrency, getUserCurrency } from '../../service';
+import { exchangeCurrency, getUserCurrency, latestRates } from '../../service';
 import { buildCreateSlice, asyncThunkCreator } from '@reduxjs/toolkit';
 
 export const createAppSlice = buildCreateSlice({
@@ -10,6 +10,7 @@ const initialState = {
   exchangeInfo: null,
   isLoading: false,
   error: null,
+  rates: [],
 };
 
 export const currencySlice = createAppSlice({
@@ -18,6 +19,7 @@ export const currencySlice = createAppSlice({
   selectors: {
     selectBaseCurrency: state => state.baseCurrency,
     selectExchangeInfo: state => state.exchangeInfo,
+    selectRates: state => state.rates,
   },
   //   extraReducers: builder => {
   //     builder.addCase(getBaseCurrency.fulfilled, (state, { payload }) => {
@@ -45,9 +47,8 @@ export const currencySlice = createAppSlice({
       },
     ),
     getExchangeInfo: create.asyncThunk(
-      async (reqData, { rejectWithValue}) => {
+      async (reqData, { rejectWithValue }) => {
         try {
-          
           const data = await exchangeCurrency(reqData);
 
           return data;
@@ -59,19 +60,39 @@ export const currencySlice = createAppSlice({
         fulfilled: (state, action) => {
           state.exchangeInfo = action.payload;
           state.isLoading = false;
-          
         },
-        pending: (state) => {
-          state.isLoading= true;
+        pending: state => {
+          state.isLoading = true;
           state.error = null;
         },
         rejected: (state, action) => {
           state.error = action.payload;
+        },
+      },
+    ),
+    getRates: create.asyncThunk(
+      async (request, { rejectWithValue }) => {
+        try {
+          // const { baseCurrency } = getState().currency;
+
+          // if (baseCurrency) return rejectWithValue(null);
+
+          const data = await latestRates(request);
+          return data;
+        } catch (error) {
+          return rejectWithValue(error.message);
         }
+      },
+      {
+        fulfilled: (state, action) => {
+          state.rates = action.payload;
+        },
       },
     ),
   }),
 });
 
-export const { selectBaseCurrency, selectExchangeInfo } = currencySlice.selectors;
-export const { getBaseCurrency, getExchangeInfo } = currencySlice.actions;
+export const { selectBaseCurrency, selectExchangeInfo, selectRates } =
+  currencySlice.selectors;
+export const { getBaseCurrency, getExchangeInfo, getRates } =
+  currencySlice.actions;
